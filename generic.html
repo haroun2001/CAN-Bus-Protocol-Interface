@@ -1,0 +1,283 @@
+<!DOCTYPE HTML>
+<!--
+    Solid State by HTML5 UP
+    html5up.net | @ajlkn
+    Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+
+<head>
+    <title>Binary Division - Solid State by HTML5 UP</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+    <style>
+        /* Vos styles CSS personnalisés vont ici */
+        /* Vous pouvez supprimer les styles CSS existants de votre fichier et les intégrer dans main.css */
+    </style>
+</head>
+
+<body class="is-preload">
+
+    <!-- Page Wrapper -->
+    <div id="page-wrapper">
+
+        <!-- Header -->
+        <header id="header">
+            <h1><a href="index.html">Binary Division</a></h1>
+            <nav>
+                <a href="#menu">Menu</a>
+            </nav>
+        </header>
+
+        <!-- Menu -->
+        <nav id="menu">
+            <div class="inner">
+                <h2>Menu</h2>
+                <ul class="links">
+                    <li><a href="index.html">Acceuil</a></li>
+                    <li><a href="generic.html">Generation des trames</a></li>
+                    <li><a href="elements.html">Calcul de CRC</a></li>
+                </ul>
+                <a href="#" class="close">Close</a>
+            </div>
+        </nav>
+
+        <!-- Wrapper -->
+        <section id="wrapper">
+            <header>
+                <div class="inner">
+                    <h2>Binary Division</h2>
+                    <!-- Votre contenu peut être placé ici -->
+                </div>
+            </header>
+
+            <!-- Content -->
+            <div class="wrapper">
+                <div class="inner">
+
+                    <!-- Votre contenu peut être placé ici -->
+
+                    <div class="container">
+							<h2>Can</h2>
+							<label for="senderDropdown">Sender:</label>
+							<select id="senderDropdown"></select>
+						  
+							<label for="receiverDropdown">Receiver:</label>
+							<select id="receiverDropdown"></select>
+					
+							<button onclick="addDevice()">Add Device</button> 
+					
+							<label for="dataInput">Value 1:</label>
+							<input type="text" id="dataInput" placeholder="Enter binary or hexa value">
+					
+							<label for="frameType">trame à afficher :</label>
+							<select  id="frameType">
+								<option value="data"> trame de données</option>
+								<option value="request">trame de requete</option>
+					
+							</select>
+					
+							<button onclick="generateCANFrame()">générer la trame</button>
+							<br>
+							<a href="index.html">Return</a>
+					
+							<h1>CAN Frame</h1>
+							<table id="canTable" border="1"></table>
+							<h2>Receiver Data</h2>
+					  <table id="receiverTable" border="1"></table>
+						
+						
+						
+						
+						<!-- Votre contenu du formulaire et des résultats peut être placé ici -->
+                    </div>
+
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Footer -->
+        <section id="footer">
+            <div class="inner">
+                <!-- Votre pied de page peut être placé ici -->
+            </div>
+        </section>
+
+    </div>
+
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.scrollex.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+			<script>
+				// Vos fonctions JavaScript personnalisées vont ici
+
+                     // Number of devices
+var numDevices = 0;
+
+// Initialize devices dropdowns on page load
+initDevicesDropdown();
+
+// Function to initialize devices dropdowns
+function initDevicesDropdown() {
+    // Get the devices dropdown elements
+    var senderDropdown = document.getElementById("senderDropdown");
+    var receiverDropdown = document.getElementById("receiverDropdown");
+
+    // Clear existing options
+    senderDropdown.innerHTML = "";
+    receiverDropdown.innerHTML = "";
+
+    // Add options for sender and receiver devices
+    for (var i = 1; i <= numDevices; i++) {
+        var option = document.createElement("option");
+        option.text = "Device " + i;
+        option.value = i;
+        senderDropdown.add(option.cloneNode(true));
+        receiverDropdown.add(option.cloneNode(true));
+    }
+}
+
+// Function to add a device
+function addDevice() {
+    numDevices++;
+    initDevicesDropdown();
+}
+       function generateCANFrame() {
+        var frameType = document.getElementById("frameType").value;
+    var dataInput = document.getElementById("dataInput").value.trim();
+    var senderId = document.getElementById("senderDropdown").value;
+    var receiverId = document.getElementById("receiverDropdown").value;
+    var binaryData;
+
+// Check if input is binary or hexadecimal
+if (/^[01]+$/.test(dataInput)) {
+    binaryData = dataInput;
+} else if (/^[0-9A-Fa-f]+$/.test(dataInput)) {
+    binaryData = hexToBinary(dataInput);
+} else {
+    alert("Invalid input. Please enter binary or hexadecimal data.");
+    return;
+}
+var frame;
+    switch (frameType) {
+        case "data":
+            frame = createDataFrame(binaryData, senderId);
+            break;
+        case "request":
+            frame = createRequestFrame(binaryData, senderId);
+            break;
+        default:
+            alert("Invalid frame type.");
+            return;
+    }
+        
+     displayCANFrame(frame);
+     receiveData(frame["Data Field"], receiverId);
+
+}
+
+    function crc16(data) {
+    var crc = 0x0000;
+    for (var pos = 0; pos < data.length; pos++) {
+        crc ^= data.charCodeAt(pos);
+        for (var i = 8; i !== 0; i--) {
+            if ((crc & 0x0001) !== 0) {
+                crc >>= 1;
+                crc ^= 0xA001;
+            } else
+                crc >>= 1;
+        }
+    }
+    return crc;
+}
+
+function createDataFrame(binaryData, senderId) {
+    // Calculate CRC
+    var crcValue = crc16(binaryData);
+
+    // Create a dynamic CAN data frame
+    var arbitrationField = "ID" + senderId.toString().padStart(11, '0'); // Arbitration Field includes sender ID
+    var controlField = calculateControlField(binaryData.length);
+    var frame = {
+        "Start Of Frame": "1",
+        "Arbitration Field": arbitrationField,
+        "Control Field": controlField,
+        "Data Field": binaryData,
+        "CRC Field": crcValue,
+        "ACK Field": "01",
+        "End Of Frame": "1111111"
+    };
+    return frame;
+}
+function createRequestFrame(senderId) {
+    var arbitrationField = "ID" + senderId.toString().padStart(11, '0'); // Arbitration Field includes sender ID
+    var controlField = "010000"; // Control Field for request frame
+    var frame = {
+        "Start Of Frame": "1",
+        "Arbitration Field": arbitrationField,
+        "Control Field": controlField,
+        "Data Field": "",
+        "CRC Field": "0000000000000000",
+        "ACK Field": "01",
+        "End Of Frame": "1111111"
+    };
+    return frame;
+}
+// Function to calculate control field based on data length
+function calculateControlField(dataLength) {
+    // Calculate control field based on the data length
+    var controlField = "000000";
+    if (dataLength <= 64) {
+        controlField += dataLength.toString(2).padStart(6, '0'); // DLC in binary
+    } else {
+        alert("Data length exceeds maximum.");
+        return null;
+    }
+    return controlField;
+}
+
+// Function to display a CAN frame
+function displayCANFrame(frame) {
+    var table = document.getElementById("canTable");
+    table.innerHTML = "";
+    for (var field in frame) {
+        var row = table.insertRow();
+        var cell1 = row.insertCell(0);
+        var cell2 = row.insertCell(1);
+        cell1.innerHTML = field;
+        cell2.innerHTML = frame[field];
+    }
+}
+// Function to simulate receiver
+function receiveData(data, receiverId) {
+    var table = document.getElementById("receiverTable");
+    var row = table.insertRow();
+    var cell1 = row.insertCell(0);
+    var cell2 = row.insertCell(1);
+    cell1.innerHTML = "Device " + receiverId;
+    cell2.innerHTML = data;
+}
+
+// Function to convert hexadecimal to binary
+function hexToBinary(hex) {
+    return hex.split('').map(function(hexDigit) {
+        return ('0000' + parseInt(hexDigit, 16).toString(2)).substr(-4);
+    }).join('');
+}
+
+
+
+
+			</script>
+		
+
+	</body>
+</html>
